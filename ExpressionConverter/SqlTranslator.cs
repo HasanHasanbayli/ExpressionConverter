@@ -4,12 +4,12 @@ using System.Text;
 
 namespace ExpressionConverter;
 
-public class SqlTranslator
+public static class SqlTranslator
 {
     private static readonly List<object> _parameters = new();
     private static int _parameterIndex;
 
-    public static string Translate<T>(Expression<Func<T, bool>> predicate)
+    public static (string, List<object>) Translate<T>(this Expression<Func<T, bool>> predicate)
     {
         StringBuilder sb = new("SELECT * FROM ");
 
@@ -19,7 +19,7 @@ public class SqlTranslator
 
         Visit(predicate.Body, sb);
 
-        return sb.ToString();
+        return (sb.ToString(), _parameters);
     }
 
     private static void Visit(Expression expression, StringBuilder sb)

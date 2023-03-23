@@ -1,10 +1,31 @@
-﻿using System.Linq.Expressions;
+﻿using System.Data.SqlClient;
+using System.Linq.Expressions;
 using ExpressionConverter;
 
-Expression<Func<Person, bool>> expression = p =>
-    (p.Id != 1 && p.Age >= 20) ||
-    (p.Age <= 30 && p.City == "Baku");
+const string connectionString = "Server=localhost,1433; Database=TestDB; User=sa; Password=MyP@ssword;";
 
-string query = SqlTranslator.Translate(expression);
+Expression<Func<Persons, bool>> expression = c => c.Age > 11;
 
-Console.WriteLine(query);
+(string query, var queryParameters) = expression.Translate();
+
+await using SqlConnection connection = new(connectionString);
+
+await connection.OpenAsync();
+
+await using SqlCommand command = new(query, connection);
+
+for (int i = 0; i < queryParameters.Count; i++)
+{
+    SqlParameter parameter = new($"@p{i}", queryParameters[i]);
+    command.Parameters.Add(parameter);
+}
+
+await using SqlDataReader reader = await command.ExecuteReaderAsync();
+
+while (await reader.ReadAsync())
+    Console.WriteLine(
+        $" Id {reader[0]};" +
+        $" FirstName {reader[1]};" +
+        $" LastName {reader[2]};" +
+        $" Age {reader[3]}; " +
+        $" City {reader[4]}");
