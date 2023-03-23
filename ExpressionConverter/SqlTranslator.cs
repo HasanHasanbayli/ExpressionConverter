@@ -6,6 +6,33 @@ namespace ExpressionConverter;
 
 public static class SqlTranslator
 {
+    private static readonly Dictionary<ExpressionType, string> SqlOperators = new()
+    {
+        [ExpressionType.Add] = " + ",
+        [ExpressionType.AddChecked] = " + ",
+        [ExpressionType.And] = " & ",
+        [ExpressionType.AndAlso] = " AND ",
+        [ExpressionType.Coalesce] = " COALESCE ",
+        [ExpressionType.Divide] = " / ",
+        [ExpressionType.Equal] = " = ",
+        [ExpressionType.ExclusiveOr] = " ^ ",
+        [ExpressionType.GreaterThan] = " > ",
+        [ExpressionType.GreaterThanOrEqual] = " >= ",
+        [ExpressionType.LeftShift] = " << ",
+        [ExpressionType.LessThan] = " < ",
+        [ExpressionType.LessThanOrEqual] = " <= ",
+        [ExpressionType.Modulo] = " % ",
+        [ExpressionType.Multiply] = " * ",
+        [ExpressionType.MultiplyChecked] = " * ",
+        [ExpressionType.NotEqual] = " <> ",
+        [ExpressionType.Or] = " | ",
+        [ExpressionType.OrElse] = " OR ",
+        [ExpressionType.Power] = " ^ ",
+        [ExpressionType.RightShift] = " >> ",
+        [ExpressionType.Subtract] = " - ",
+        [ExpressionType.SubtractChecked] = " - "
+    };
+
     public static (string, List<object>) Translate<T>(
         this Expression<Func<T, bool>> predicate,
         int page = 1,
@@ -46,12 +73,31 @@ public static class SqlTranslator
                 case UnaryExpression unaryExpression:
                     expression = unaryExpression.Operand;
                     continue;
+                case MethodCallExpression methodCallExpression:
+                    VisitMethodCall(methodCallExpression, sb, parameters);
+                    break;
                 default:
                     throw new NotSupportedException($"The expression type '{expression.GetType()}' is not supported.");
             }
 
             break;
         }
+    }
+
+    private static void VisitMethodCall(MethodCallExpression expression, StringBuilder sb, List<object> parameters)
+    {
+        if (expression.Method.Name != "Contains" || expression.Object?.Type != typeof(string))
+            throw new NotSupportedException($"The method '{expression.Method.Name}' is not supported.");
+      
+        sb.Append('(');
+        
+        Visit(expression.Object, sb, parameters);
+        
+        sb.Append(" LIKE CONCAT('%',");
+        
+        Visit(expression.Arguments[0], sb, parameters);
+        
+        sb.Append(",'%'))");
     }
 
     private static void VisitBinary(BinaryExpression expression, StringBuilder sb, List<object> parameters)
@@ -83,7 +129,7 @@ public static class SqlTranslator
 
     private static string GetColumnName(MemberExpression expression)
     {
-        if (!(expression.Member is PropertyInfo propertyInfo))
+        if (expression.Member is not PropertyInfo propertyInfo)
             throw new NotSupportedException("Only property members are supported for column names.");
 
         return propertyInfo.Name;
@@ -91,32 +137,8 @@ public static class SqlTranslator
 
     private static string GetSqlOperator(ExpressionType expressionType)
     {
-        return expressionType switch
-        {
-            ExpressionType.Add => " + ",
-            ExpressionType.AddChecked => " + ",
-            ExpressionType.And => " & ",
-            ExpressionType.AndAlso => " AND ",
-            ExpressionType.Coalesce => " COALESCE ",
-            ExpressionType.Divide => " / ",
-            ExpressionType.Equal => " = ",
-            ExpressionType.ExclusiveOr => " ^ ",
-            ExpressionType.GreaterThan => " > ",
-            ExpressionType.GreaterThanOrEqual => " >= ",
-            ExpressionType.LeftShift => " << ",
-            ExpressionType.LessThan => " < ",
-            ExpressionType.LessThanOrEqual => " <= ",
-            ExpressionType.Modulo => " % ",
-            ExpressionType.Multiply => " * ",
-            ExpressionType.MultiplyChecked => " * ",
-            ExpressionType.NotEqual => " <> ",
-            ExpressionType.Or => " | ",
-            ExpressionType.OrElse => " OR ",
-            ExpressionType.Power => " ^ ",
-            ExpressionType.RightShift => " >> ",
-            ExpressionType.Subtract => " - ",
-            ExpressionType.SubtractChecked => " - ",
-            _ => throw new NotSupportedException($"The expression type '{expressionType}' is not supported.")
-        };
+        if (SqlOperators.TryGetValue(expressionType, out string? sqlOperator)) return sqlOperator;
+
+        throw new NotSupportedException($"The expression type '{expressionType}' is not supported.");
     }
 }
