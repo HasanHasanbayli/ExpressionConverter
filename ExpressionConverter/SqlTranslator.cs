@@ -41,19 +41,23 @@ public static class SqlTranslator
         string sortOrder = "asc")
     {
         StringBuilder sb = new("SELECT * FROM ");
+
         sb.Append(typeof(T).Name);
+
         sb.Append(" WHERE ");
 
         List<object> parameters = new();
+
         Visit(predicate.Body, sb, parameters);
 
         sb.Append($" ORDER BY {sortBy} {sortOrder.ToUpper()} ");
+
         sb.Append($" OFFSET {(page - 1) * pageSize} ROWS ");
+
         sb.Append($" FETCH NEXT {pageSize} ROWS ONLY ");
 
         return (sb.ToString(), parameters);
     }
-
 
     private static void Visit(Expression expression, StringBuilder sb, List<object> parameters)
     {
@@ -88,15 +92,15 @@ public static class SqlTranslator
     {
         if (expression.Method.Name != "Contains" || expression.Object?.Type != typeof(string))
             throw new NotSupportedException($"The method '{expression.Method.Name}' is not supported.");
-      
+
         sb.Append('(');
-        
+
         Visit(expression.Object, sb, parameters);
-        
+
         sb.Append(" LIKE CONCAT('%',");
-        
+
         Visit(expression.Arguments[0], sb, parameters);
-        
+
         sb.Append(",'%'))");
     }
 

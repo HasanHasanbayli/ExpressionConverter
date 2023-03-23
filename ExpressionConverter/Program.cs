@@ -4,9 +4,9 @@ using ExpressionConverter;
 
 const string connectionString = "Server=localhost,1433; Database=TestDB; User=sa; Password=MyP@ssword;";
 
-Expression<Func<Persons, bool>> expression = c => c.City.Contains("Baku");
+Expression<Func<Persons, bool>> expression = c => c.City.Contains("Baku") && c.Age > 15 && c.Age < 20;
 
-(string query, var queryParameters) = expression.Translate(1, 10, "Age");
+(string query, var queryParameters) = expression.Translate(page: 1, pageSize: 10, sortBy: "Age", sortOrder: "desc");
 
 await using SqlConnection connection = new(connectionString);
 
