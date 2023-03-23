@@ -6,33 +6,39 @@ namespace ExpressionConverter;
 
 public static class SqlTranslator
 {
-    private static readonly List<object> _parameters = new();
-    private static int _parameterIndex;
-
-    public static (string, List<object>) Translate<T>(this Expression<Func<T, bool>> predicate)
+    public static (string, List<object>) Translate<T>(
+        this Expression<Func<T, bool>> predicate,
+        int page = 1,
+        int pageSize = 10,
+        string sortBy = "Id",
+        string sortOrder = "asc")
     {
         StringBuilder sb = new("SELECT * FROM ");
-
         sb.Append(typeof(T).Name);
-
         sb.Append(" WHERE ");
 
-        Visit(predicate.Body, sb);
+        List<object> parameters = new();
+        Visit(predicate.Body, sb, parameters);
 
-        return (sb.ToString(), _parameters);
+        sb.Append($" ORDER BY {sortBy} {sortOrder.ToUpper()} ");
+        sb.Append($" OFFSET {(page - 1) * pageSize} ROWS ");
+        sb.Append($" FETCH NEXT {pageSize} ROWS ONLY ");
+
+        return (sb.ToString(), parameters);
     }
 
-    private static void Visit(Expression expression, StringBuilder sb)
+
+    private static void Visit(Expression expression, StringBuilder sb, List<object> parameters)
     {
         while (true)
         {
             switch (expression)
             {
                 case BinaryExpression binaryExpression:
-                    VisitBinary(binaryExpression, sb);
+                    VisitBinary(binaryExpression, sb, parameters);
                     break;
                 case ConstantExpression constantExpression:
-                    VisitConstant(constantExpression, sb);
+                    VisitConstant(constantExpression, sb, parameters);
                     break;
                 case MemberExpression memberExpression:
                     VisitMember(memberExpression, sb);
@@ -48,26 +54,26 @@ public static class SqlTranslator
         }
     }
 
-    private static void VisitBinary(BinaryExpression expression, StringBuilder sb)
+    private static void VisitBinary(BinaryExpression expression, StringBuilder sb, List<object> parameters)
     {
         sb.Append('(');
 
-        Visit(expression.Left, sb);
+        Visit(expression.Left, sb, parameters);
 
         sb.Append(GetSqlOperator(expression.NodeType));
 
-        Visit(expression.Right, sb);
+        Visit(expression.Right, sb, parameters);
 
         sb.Append(')');
     }
 
-    private static void VisitConstant(ConstantExpression expression, StringBuilder sb)
+    private static void VisitConstant(ConstantExpression expression, StringBuilder sb, List<object> parameters)
     {
-        string parameterName = $"@p{_parameterIndex++}";
+        string parameterName = $"@p{parameters.Count}";
 
         sb.Append(parameterName);
 
-        _parameters.Add(expression.Value!);
+        parameters.Add(expression.Value!);
     }
 
     private static void VisitMember(MemberExpression expression, StringBuilder sb)

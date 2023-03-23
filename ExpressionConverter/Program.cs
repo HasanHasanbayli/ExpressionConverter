@@ -4,7 +4,7 @@ using ExpressionConverter;
 
 const string connectionString = "Server=localhost,1433; Database=TestDB; User=sa; Password=MyP@ssword;";
 
-Expression<Func<Persons, bool>> expression = c => c.Age > 11;
+Expression<Func<Persons, bool>> expression = c => c.Id == 1 || c.Id == 2;
 
 (string query, var queryParameters) = expression.Translate();
 
