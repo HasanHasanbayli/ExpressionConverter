@@ -6,7 +6,7 @@ const string connectionString = "Server=localhost,1433; Database=TestDB; User=sa
 
 Expression<Func<Persons, bool>> expression = c => c.City.Contains("Baku") && c.Age > 15 && c.Age < 20;
 
-(string query, var queryParameters) = expression.Translate(page: 1, pageSize: 10, sortBy: "Age", sortOrder: "desc");
+(string query, List<object> queryParameters) = expression.Translate(page: 1, pageSize: 10, sortBy: "Age", sortOrder: "desc");
 
 await using SqlConnection connection = new(connectionString);
 
@@ -16,8 +16,7 @@ await using SqlCommand command = new(query, connection);
 
 for (int i = 0; i < queryParameters.Count; i++)
 {
-    SqlParameter parameter = new($"@p{i}", queryParameters[i]);
-    command.Parameters.Add(parameter);
+    command.Parameters.Add(new SqlParameter($"@p{i}", queryParameters[i]));
 }
 
 await using SqlDataReader reader = await command.ExecuteReaderAsync();
