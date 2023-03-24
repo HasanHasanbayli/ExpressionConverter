@@ -4,9 +4,10 @@ using ExpressionConverter;
 
 const string connectionString = "Server=localhost,1433; Database=TestDB; User=sa; Password=MyP@ssword;";
 
-Expression<Func<Persons, bool>> expression = c => c.City.Contains("Baku") && c.Age > 15 && c.Age < 20;
+Expression<Func<Persons, bool>> expression = c => c.City.Contains("Baku") && c.Age > 20;
 
-(string query, List<object> queryParameters) = expression.Translate(page: 1, pageSize: 10, sortBy: "Age", sortOrder: "desc");
+(string query, List<object> queryParameters) =
+    expression.Translate(page: 1, pageSize: 10, sortBy: "Age", sortOrder: "desc");
 
 await using SqlConnection connection = new(connectionString);
 
@@ -26,5 +27,5 @@ while (await reader.ReadAsync())
         $" Id {reader[0]};" +
         $" FirstName {reader[1]};" +
         $" LastName {reader[2]};" +
-        $" Age {reader[3]}; " +
+        $" Age {reader[3]};" +
         $" City {reader[4]}");
