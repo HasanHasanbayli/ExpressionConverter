@@ -141,8 +141,9 @@ public static class SqlTranslator
 
     private static string GetSqlOperator(ExpressionType expressionType)
     {
-        if (SqlOperators.TryGetValue(expressionType, out string? sqlOperator)) return sqlOperator;
-
-        throw new NotSupportedException($"The expression type '{expressionType}' is not supported.");
+        if (!SqlOperators.TryGetValue(expressionType, out string? sqlOperator))
+            throw new NotSupportedException($"The expression type '{expressionType}' is not supported."); 
+        
+        return sqlOperator;
     }
 }
