@@ -10,8 +10,6 @@ public class DbHelper
     {
         await using SqlConnection connection = new(ConnectionString);
 
-        await connection.OpenAsync();
-
         await using SqlCommand command = new(query, connection);
 
         for (int i = 0; i < queryParameters.Count; i++)
@@ -19,9 +17,10 @@ public class DbHelper
             command.Parameters.Add(new SqlParameter($"@p{i}", queryParameters[i]));
         }
 
+        await connection.OpenAsync();
+
         await using SqlDataReader reader = await command.ExecuteReaderAsync();
 
-        
         while (await reader.ReadAsync())
             Console.WriteLine(
                 $" Id {reader[0]};" +
