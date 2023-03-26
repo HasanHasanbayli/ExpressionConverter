@@ -37,7 +37,6 @@ public class DbHelper
         {
             Console.WriteLine(e);
         }
-
         finally
         {
             await connection.CloseAsync();
